@@ -1,89 +1,118 @@
 import streamlit as st
-from datetime import datetime
+import random
+import string
+import math
 
-# Set page configuration
-st.set_page_config(page_title="Growth Mindset Project", page_icon="★", layout="wide")
+# Function to evaluate password strength and provide feedback
+def evaluate_password_strength(password):
+    length = len(password)
+    has_upper = any(c.isupper() for c in password)
+    has_lower = any(c.islower() for c in password)
+    has_digit = any(c.isdigit() for c in password)
+    has_special = any(c in string.punctuation for c in password)
 
-# Initialize session state for user inputs
-if 'challenges' not in st.session_state:
-    st.session_state['challenges'] = []
-if 'reflections' not in st.session_state:
-    st.session_state['reflections'] = []
-if 'achievements' not in st.session_state:
-    st.session_state['achievements'] = []
+    feedback = []
+    if length < 8:
+        feedback.append("Password is too short.")
+    if not has_upper:
+        feedback.append("Add uppercase letters.")
+    if not has_lower:
+        feedback.append("Add lowercase letters.")
+    if not has_digit:
+        feedback.append("Add numbers.")
+    if not has_special:
+        feedback.append("Add special characters.")
 
-# Title and introduction
-st.title("Growth Mindset Challenge: Web App With Streamlit")
-st.subheader("🚀 Welcome to Your Growth Journey!")
-st.write("This is a growth mindset project")
-
-# Quote section
-st.header("💡 Today's Growth Mindset Quote")
-st.write("Success is not final, failure is not fatal: it is the courage to continue that counts. - Winston Churchill")
-
-# Challenge section
-st.header("🔧 What's Your Challenge Today?")
-user_input = st.text_input("Describe a challenge you're facing:")
-
-if st.button("Add Challenge"):
-    if user_input:
-        st.session_state['challenges'].append(user_input)
-        st.success(f"You're facing: {user_input}. Keep pushing forward towards your goal! 🚀")
+    # Determine strength
+    if length >= 12 and has_upper and has_lower and has_digit and has_special:
+        strength = "Strong"
+    elif length >= 8 and (has_upper or has_lower) and (has_digit or has_special):
+        strength = "Moderate"
     else:
-        st.warning("Remember, every challenge is an opportunity for growth. 🌱")
+        strength = "Weak"
 
-# Display all challenges
-if st.session_state['challenges']:
-    st.write("### Your Challenges:")
-    for challenge in st.session_state['challenges']:
-        st.write(f"- {challenge}")
+    return strength, feedback
 
-# Reflection section
-st.header("📝 Reflect on Your Learning")
-reflection = st.text_area("Write about what you learned today:")
+# Function to calculate password entropy
+def calculate_entropy(password):
+    pool_size = 0
+    if any(c.isupper() for c in password):
+        pool_size += 26
+    if any(c.islower() for c in password):
+        pool_size += 26
+    if any(c.isdigit() for c in password):
+        pool_size += 10
+    if any(c in string.punctuation for c in password):
+        pool_size += len(string.punctuation)
 
-if st.button("Add Reflection"):
-    if reflection:
-        st.session_state['reflections'].append(reflection)
-        st.success(f"✨ Great Insight! Your reflection: {reflection}")
-    else:
-        st.warning("Take a moment to reflect on your learning. 🌱")
+    entropy = len(password) * math.log2(pool_size) if pool_size > 0 else 0
+    return entropy
 
-# Display all reflections
-if st.session_state['reflections']:
-    st.write("### Your Reflections:")
-    for ref in st.session_state['reflections']:
-        st.write(f"- {ref}")
+# Function to generate a random password
+def generate_password(length, use_upper, use_lower, use_digits, use_special):
+    char_pool = ''
+    if use_upper:
+        char_pool += string.ascii_uppercase
+    if use_lower:
+        char_pool += string.ascii_lowercase
+    if use_digits:
+        char_pool += string.digits
+    if use_special:
+        char_pool += string.punctuation
 
-# Motivational quote section
-st.header("💪 Motivational Quote of the Day")
-st.write("\"Believe you can and you're halfway there.\" - Theodore Roosevelt")
+    if not char_pool:
+        return ''
 
-# Achievements section
-st.header("🏆 Your Achievements")
-achievement = st.text_input("Add a new achievement:")
+    return ''.join(random.choice(char_pool) for _ in range(length))
 
-if st.button("Add Achievement"):
-    if achievement:
-        st.session_state['achievements'].append(achievement)
-        st.success(f"🎉 Congratulations! You've achieved: {achievement}")
-    else:
-        st.warning("Remember, every achievement is a step towards your goals. 🌱")
+# Streamlit app
+st.set_page_config(page_title="Advanced Password Power Meter", layout="centered", initial_sidebar_state="expanded")
 
-# Display all achievements
-if st.session_state['achievements']:
-    st.write("### Your Achievements:")
-    for ach in st.session_state['achievements']:
-        st.write(f"- {ach}")
+st.title("🔒 Advanced Password Power Meter")
+st.markdown("Check the strength of your password and generate strong passwords with detailed feedback.")
 
-# Progress tracker
-st.header("🌟 Your Progress")
+# Password strength checker
+st.subheader("Check Password Strength")
+password = st.text_input("Enter your password", type="password")
+if password:
+    strength, feedback = evaluate_password_strength(password)
+    entropy = calculate_entropy(password)
+    st.write(f"Password Strength: **{strength}**")
+    st.write(f"Password Entropy: **{entropy:.2f} bits**")
+    if feedback:
+        st.write("Feedback:")
+        for item in feedback:
+            st.write(f"- {item}")
 
-# Footer
-st.write("---")
-st.write("🚀 Keep believing in yourself. Growth is a journey, not a destination! ⭐")
-st.write("🌱 Thank you for using the Growth Mindset App! ❤️")
-st.write("**📝 Created by Kinza Khan**")
+# Password generator
+st.subheader("Generate a Strong Password")
+length = st.slider("Password Length", min_value=8, max_value=32, value=12)
+use_upper = st.checkbox("Include Uppercase Letters", value=True)
+use_lower = st.checkbox("Include Lowercase Letters", value=True)
+use_digits = st.checkbox("Include Numbers", value=True)
+use_special = st.checkbox("Include Special Characters", value=True)
+
+if st.button("Generate Password"):
+    new_password = generate_password(length, use_upper, use_lower, use_digits, use_special)
+    st.write(f"Generated Password: `{new_password}`")
+
+# Dark theme styling
+st.markdown(
+    """
+    <style>
+    body {
+        background-color: #2E2E2E;
+        color: #FFFFFF;
+    }
+    .stButton>button {
+        background-color: #4CAF50;
+        color: white;
+    }
+    </style>
+    """,
+    unsafe_allow_html=True
+)
+
 
 
 
